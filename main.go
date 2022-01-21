@@ -22,6 +22,10 @@ func newRouter() *mux.Router {
 	r.HandleFunc("/jobs/{id}", models.EditAJobListing).Methods("PUT")
 	r.HandleFunc("/jobs/{id}", models.DeleteAJobListing).Methods("DELETE")
 
+	staticFileDir := http.Dir("./assets")
+	staticFileHandler := http.StripPrefix("/assets/", http.FileServer(staticFileDir))
+	r.PathPrefix("/assets/").Handler(staticFileHandler).Methods("GET")
+
 	return r
 }
 
