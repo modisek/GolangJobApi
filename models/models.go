@@ -12,13 +12,15 @@ import (
 	_ "github.com/jackc/pgx/v4/stdlib"
 )
 
+var dbString = "postgresql://gorm:password@localhost:5432/jobstore?sslmode=disable"
+
 func Db() *sql.DB {
-	db, err := sql.Open("pgx", "postgresql://gorm:password@localhost:5432/jobstore?sslmode=disable")
+	db, err := sql.Open("pgx", dbString)
 	if err != nil {
 		log.Fatal(err)
 	}
 	if err := db.Ping(); err != nil {
-		log.Fatalf("unable to reach database: %v", err)
+		log.Printf("unable to reach database: %v", err)
 	}
 	fmt.Println("database is reachable")
 	// Maximum Idle Connections
@@ -39,23 +41,31 @@ type Job struct {
 	Title       string `json:"title"`
 	Description string `json:"description"`
 	Email       string `json:"email"`
-	Created_at  string `json:"created_at"`
+	// Type        string `json:"type"`             //onsite, remote or hybrid
+	// Category    string `json:"category"`         // industry the job is in
+	// Location    string `json:"location"`
+	//    Expires     time.Time `json:"expires"`
+	Created_at string `json:"created_at"`
 }
 
-func GetJobs(w http.ResponseWriter, r *http.Request) {
+//return all jobs
+func GetJobs(w http.ResponseWriter, _ *http.Request) {
 	rows, err := db.Query("SELECT * FROM jobs limit 10")
 	if err != nil {
-		log.Fatalf("could not execute query: %v", err)
+		http.Error(w, err.Error(), 500)
+		return
 	}
+	defer rows.Close()
 
 	jobs := []Job{}
-
 	for rows.Next() {
 		job := Job{}
-
 		if err := rows.Scan(&job.Id, &job.Title, &job.Description, &job.Email, &job.Created_at); err != nil {
-			log.Fatalf("could not scan row: %v", err)
+			log.Printf("could not scan row: %v", err)
+			http.Error(w, err.Error(), 500)
+			return
 		}
+
 		jobs = append(jobs, job)
 	}
 	jobbytes, err := json.Marshal(jobs)
@@ -64,30 +74,43 @@ func GetJobs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Write(jobbytes)
-	// for _, jbs := range jobs {
-	// 	fmt.Fprintf(w, "%s, %s, %s\n ", jbs.Title, jbs.Description, jbs.Email)
-	// }
+
 }
 
+//return a job by its id
 func GetOneJob(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
+
+	if id == "" {
+		http.Error(w, http.StatusText(400), 400)
+	}
 
 	row := db.QueryRow("SELECT * FROM jobs WHERE id = $1", id)
 
 	jb := new(Job)
 	err := row.Scan(&jb.Id, &jb.Title, &jb.Description, &jb.Email, &jb.Created_at)
-	if err != nil {
-		log.Fatalf("error %v", err)
+	if err == sql.ErrNoRows {
+		http.NotFound(w, r)
+		return
+	} else if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
 	}
 
 	fmt.Fprintf(w, "%s, %s, %s\n", jb.Title, jb.Description, jb.Email)
 }
 
+//create a job listing
 func CreateJobListing(w http.ResponseWriter, r *http.Request) {
 	title := r.FormValue("title")
 	description := r.FormValue("description")
 	email := r.FormValue("email")
+
+	if title == "" || description == "" || email == "" {
+		http.Error(w, http.StatusText(400), 400)
+		return
+	}
 
 	newJob := Job{
 		Title:       title,
@@ -96,31 +119,37 @@ func CreateJobListing(w http.ResponseWriter, r *http.Request) {
 	}
 	result, err := db.Exec("INSERT INTO jobs (title, description, email) VALUES($1, $2, $3)", newJob.Title, newJob.Description, newJob.Email)
 	if err != nil {
-		log.Fatalf("could not insert row: %v", err)
+		http.Error(w, err.Error(), 500)
+		return
 	}
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		log.Fatalf("could not get affected rows: %v", err)
+		http.Error(w, err.Error(), 500)
+		return
 	}
 	fmt.Println("inserted", rowsAffected, "rows")
 }
 
+//delete a job given its id
 func DeleteAJobListing(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
 	result, err := db.Exec("DELETE FROM jobs WHERE id = $1", id)
 	if err != nil {
-		log.Fatalf("could not delete row: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		log.Fatalf("could not get affected rows: %v", err)
+		log.Printf("could not get affected rows: %v", err)
+		return
 	}
 
 	fmt.Println("deleted", rowsAffected, "row")
 }
 
+//edit a job by its id
 func EditAJobListing(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("edit job"))
 }

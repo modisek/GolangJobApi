@@ -8,7 +8,6 @@
 <body>
   <h1>Jobs</h1>
 
-  <a href="user.html">something</a>
 
   <!--
     This section of the document specifies the table that will
@@ -52,6 +51,7 @@
       .then(jobList => {
         //Once we fetch the list, we iterate over it
         jobList.forEach(job => {
+                  console.log(job)
           // Create the table row
           row = document.createElement("tr")
 
@@ -63,14 +63,24 @@
           description.innerHTML = job.description
   email = document.createElement("td")
           email.innerHTML = job.email
+         button = document.createElement("button")
+        button.innerHTML = "delete"
+
+                  button.addEventListener("click", ()=>{
+                      console.log(job.id) 
+                            fetch(`/jobs/${job.id}`)
+                        })
 
           // Add the data elements to the row
           row.appendChild(title)
           row.appendChild(description)
           row.appendChild(email)
+          row.appendChild(button)
           // Finally, add the row element to the table itself
           jobTable.appendChild(row)
         })
       })
+
+      
   </script>
 </body>
