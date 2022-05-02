@@ -57,7 +57,7 @@ func (st *jobStore) GetJobs() ([]*models.Job, error) {
 
 	for rows.Next() {
 		job := new(models.Job)
-		if err := rows.Scan(&job.Id, &job.Title, &job.Description, &job.Email, &job.Created_at); err != nil {
+		if err := rows.Scan(&job.Id, &job.Title, &job.Description, &job.Email, &job.Type, &job.Category, &job.Location, &job.Expires, &job.Created_at); err != nil {
 
 			return nil, err
 		}
@@ -78,7 +78,7 @@ func (st *jobStore) GetOneJob(id int) (*models.Job, error) {
 
 	row := st.db.QueryRowContext(ctx, "SELECT * FROM jobs WHERE id = $1", id)
 
-	err := row.Scan(&job.Id, &job.Title, &job.Description, &job.Email, &job.Created_at)
+	err := row.Scan(&job.Id, &job.Title, &job.Description, &job.Email, &job.Type, &job.Category, &job.Location, &job.Expires, &job.Created_at)
 	if err == sql.ErrNoRows {
 		return nil, err
 	} else if err != nil {
@@ -95,7 +95,7 @@ func (st *jobStore) CreateJobListing(job *models.Job) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	result, err := st.db.ExecContext(ctx, "INSERT INTO jobs (title, description, email) VALUES($1, $2, $3)", job.Title, job.Description, job.Email)
+	result, err := st.db.ExecContext(ctx, "INSERT INTO jobs (title, description, email, type, category, location) VALUES($1, $2, $3, $4, $5, $6)", job.Title, job.Description, job.Email, job.Type, job.Category, job.Location)
 	if err != nil {
 		return err
 	}
@@ -136,4 +136,36 @@ func (st *jobStore) EditAJobListing(job *models.Job, id int) error {
 		return err
 	}
 	return err
+}
+
+func (st *jobStore) CreateUser(user *models.User) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	result, err := st.db.ExecContext(ctx, "INSERT INTO users (email, pass) VALUES ($1, $2 )", user.Username, user.Password)
+	if err != nil {
+		return err
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil || rowsAffected == 0 {
+		return err
+	}
+	return err
+
+}
+
+func (st *jobStore) GetUser(username string) (*models.User, error) {
+	user := new(models.User)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	result := st.db.QueryRowContext(ctx, "select email,pass  from users where email = $1", username)
+
+	err := result.Scan(&user.Username, &user.Password)
+	if err == sql.ErrNoRows || err != nil {
+		return nil, err
+	}
+	return user, nil
+
 }

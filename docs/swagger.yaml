@@ -1,4 +1,8 @@
+basePath: /api/jobs
+host: localhost:8000
 info:
   contact: {}
+  title: User API documentation
+  version: 1.0.0
 paths: {}
 swagger: "2.0"

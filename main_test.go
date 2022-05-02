@@ -14,7 +14,6 @@ type Paths struct {
 var p = []Paths{
 	{path: "/", method: "GET"},
 	{path: "/jobs", method: "GET"},
-	// {path: "/jobs", method: "POST"},
 }
 
 func checkstatuscodes(t *testing.T, path, method string) {

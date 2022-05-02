@@ -1,6 +1,6 @@
 
 migrateup:
-	 migrate -path db/migration -database "postgresql://gorm:password@localhost:5432/job_portal?sslmode=disable" -verbose up
+	 migrate -path db/migration -database "postgresql://gorm:password@localhost:5432/jobstore?sslmode=disable" -verbose up
 migratedown:
-	 migrate -path db/migration -database "postgresql://gorm:password@localhost:5432/job_portal?sslmode=disable" -verbose down
+	 migrate -path db/migration -database "postgresql://gorm:password@localhost:5432/jobstore?sslmode=disable" -verbose down
 

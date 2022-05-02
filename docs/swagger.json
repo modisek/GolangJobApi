@@ -1,7 +1,11 @@
 {
     "swagger": "2.0",
     "info": {
-        "contact": {}
+        "title": "User API documentation",
+        "contact": {},
+        "version": "1.0.0"
     },
+    "host": "localhost:8000",
+    "basePath": "/api/jobs",
     "paths": {}
 }
