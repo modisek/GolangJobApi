@@ -1,5 +1,6 @@
 # GolangJobApi
 a job rest ish api built using golang
 
-#run locally
+#to run locally use docker composer
+> docker compose up
 
